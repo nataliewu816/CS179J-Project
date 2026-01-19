@@ -1,23 +1,34 @@
 // nano_hw.h  (ATmega328P / Arduino Nano, bare-metal; no Arduino core)
-// Uses only <avr/io.h>.
-// - Actuator #1 (BTS7960-style): D4, D5(PWM), D6(PWM), D7
-// - Actuator #2 (BTS7960-style): D9, D10(PWM), D11(PWM), D12
-// - Sensors: TWO BH1750 light sensors on the same I2C bus (A4/A5)
-//     BH1750 #1: ADDR = GND -> 0x23
-//     BH1750 #2: ADDR = VCC -> 0x5C
+// Uses only <avr/io.h> and <avr/interrupt.h>.
+//
+// FINAL PIN MAP (per your latest change):
+// Actuator #1 (BTS7960-style):
+//   D4 = R_EN, D7 = L_EN, D5 = RPWM (PWM), D6 = LPWM (PWM)
+//   -> Timer0 provides PWM on D5(OC0B) and D6(OC0A)
+//
+// Actuator #2 (BTS7960-style) UPDATED to free Timer1:
+//   D9  = R_EN (digital only), D12 = L_EN (digital only)
+//   D3  = RPWM (PWM), D11 = LPWM (PWM)
+//   -> Timer2 provides PWM on D3(OC2B) and D11(OC2A)
+//
+// Sensors:
+//   Two BH1750 on I2C: A4(SDA), A5(SCL) shared
+//     BH1750 #1 ADDR=GND -> 0x23
+//     BH1750 #2 ADDR=VCC -> 0x5C
+//
+// Scheduler:
+//   Exact 1.000 ms tick using Timer1 CTC:
+//     Prescaler /64, OCR1A=249 => 250kHz clock, 250 counts = 1ms
 //
 // Notes:
-// - This header assumes F_CPU = 16MHz (Nano default).
-// - Timer usage:
-//     Timer0: Actuator #1 PWM on D5(OC0B) and D6(OC0A)
-//     Timer1: Actuator #2 RPWM on D10(OC1B) (Fast PWM 8-bit, mode 5)
-//     Timer2: Actuator #2 LPWM on D11(OC2A)
-// - I2C (TWI) uses A4/A5 only (PC4/PC5), shared by both BH1750s.
+// - Timer0 PWM frequency with /64 prescale is ~976 Hz (fast PWM 8-bit).
+// - Timer2 PWM frequency with /64 prescale is ~976 Hz (fast PWM 8-bit).
+// - All EN pins are just GPIO outputs (no PWM).
+// - If you need different PWM freq, change prescalers carefully.
 
-
-//just call "nano_init()" at start of main, this does the rest
 #pragma once
 #include <avr/io.h>
+#include <avr/interrupt.h>
 #include <stdint.h>
 
 #ifndef F_CPU
@@ -30,91 +41,85 @@
 // PIN DEFINITIONS
 // =========================================================
 
-// ---- Actuator 1 (PORTD) ----
+// ----------------- Actuator 1 (PORTD) -----------------
+// D4 = PD4
 #define ACT1_REN_DDR   DDRD
 #define ACT1_REN_PORT  PORTD
 #define ACT1_REN_PIN   PD4
 
+// D5 = PD5 (OC0B)
 #define ACT1_RPWM_DDR  DDRD
-#define ACT1_RPWM_PIN  PD5   // D5  = OC0B
+#define ACT1_RPWM_PIN  PD5
 
+// D6 = PD6 (OC0A)
 #define ACT1_LPWM_DDR  DDRD
-#define ACT1_LPWM_PIN  PD6   // D6  = OC0A
+#define ACT1_LPWM_PIN  PD6
 
+// D7 = PD7
 #define ACT1_LEN_DDR   DDRD
 #define ACT1_LEN_PORT  PORTD
 #define ACT1_LEN_PIN   PD7
 
-// ---- Actuator 2 (PORTB) ----
+// ----------------- Actuator 2 (UPDATED) -----------------
+// D9  = PB1 (digital enable)
 #define ACT2_REN_DDR   DDRB
 #define ACT2_REN_PORT  PORTB
-#define ACT2_REN_PIN   PB1   // D9
+#define ACT2_REN_PIN   PB1
 
-#define ACT2_RPWM_DDR  DDRB
-#define ACT2_RPWM_PIN  PB2   // D10 = OC1B
+// D3  = PD3 (OC2B) RPWM
+#define ACT2_RPWM_DDR  DDRD
+#define ACT2_RPWM_PIN  PD3
 
+// D11 = PB3 (OC2A) LPWM
 #define ACT2_LPWM_DDR  DDRB
-#define ACT2_LPWM_PIN  PB3   // D11 = OC2A
+#define ACT2_LPWM_PIN  PB3
 
+// D12 = PB4 (digital enable)
 #define ACT2_LEN_DDR   DDRB
 #define ACT2_LEN_PORT  PORTB
-#define ACT2_LEN_PIN   PB4   // D12
+#define ACT2_LEN_PIN   PB4
 
-// ---- I2C pins (PORTC) ----
-#define I2C_SDA_PIN    PC4    // A4
-#define I2C_SCL_PIN    PC5    // A5
+// ----------------- I2C pins (PORTC) -----------------
+// A4 = PC4 (SDA), A5 = PC5 (SCL)
+#define I2C_SDA_PIN    PC4
+#define I2C_SCL_PIN    PC5
 
 // =========================================================
-// PWM INITIALIZATION
+// PWM: TIMER0 for Actuator 1 (D5/D6)
 // =========================================================
-
-// Actuator #1: Timer0 Fast PWM on OC0A(D6) + OC0B(D5), prescaler /64
 static inline void pwm_timer0_init(void) {
-  ACT1_RPWM_DDR |= BIT(ACT1_RPWM_PIN); // D5
-  ACT1_LPWM_DDR |= BIT(ACT1_LPWM_PIN); // D6
+  // PWM pins output
+  ACT1_RPWM_DDR |= BIT(ACT1_RPWM_PIN); // D5 OC0B
+  ACT1_LPWM_DDR |= BIT(ACT1_LPWM_PIN); // D6 OC0A
 
-  // Fast PWM, non-inverting on both outputs
+  // Timer0: Fast PWM 8-bit, non-inverting on OC0A/OC0B
   TCCR0A = BIT(WGM01) | BIT(WGM00) | BIT(COM0A1) | BIT(COM0B1);
-  TCCR0B = BIT(CS01) | BIT(CS00); // /64
+  TCCR0B = BIT(CS01) | BIT(CS00); // prescaler /64
 
-  OCR0A = 0; // D6 duty
-  OCR0B = 0; // D5 duty
+  OCR0A = 0;
+  OCR0B = 0;
 }
 
-// Actuator #2 RPWM: Timer1 OC1B(D10) Fast PWM 8-bit (mode 5), prescaler /64
-static inline void pwm_timer1_init_for_oc1b_8bit(void) {
-  ACT2_RPWM_DDR |= BIT(ACT2_RPWM_PIN); // D10
+// =========================================================
+// PWM: TIMER2 for Actuator 2 (D3/D11)  (OC2B + OC2A)
+// =========================================================
+static inline void pwm_timer2_init_dual(void) {
+  // PWM pins output
+  ACT2_RPWM_DDR |= BIT(ACT2_RPWM_PIN); // D3  OC2B
+  ACT2_LPWM_DDR |= BIT(ACT2_LPWM_PIN); // D11 OC2A
 
-  // Mode 5: Fast PWM 8-bit => WGM10=1, WGM12=1
-  // Non-inverting on OC1B => COM1B1=1
-  TCCR1A = BIT(WGM10) | BIT(COM1B1);
-  TCCR1B = BIT(WGM12) | BIT(CS11) | BIT(CS10); // /64
+  // Timer2: Fast PWM 8-bit, non-inverting on OC2A/OC2B
+  TCCR2A = BIT(WGM21) | BIT(WGM20) | BIT(COM2A1) | BIT(COM2B1);
+  TCCR2B = BIT(CS22); // prescaler /64
 
-  OCR1B = 0;
-}
-
-// Actuator #2 LPWM: Timer2 OC2A(D11) Fast PWM, prescaler /64
-static inline void pwm_timer2_init_for_oc2a(void) {
-  ACT2_LPWM_DDR |= BIT(ACT2_LPWM_PIN); // D11
-
-  // Fast PWM, non-inverting on OC2A
-  TCCR2A = BIT(WGM21) | BIT(WGM20) | BIT(COM2A1);
-  TCCR2B = BIT(CS22); // /64
-
-  OCR2A = 0;
+  OCR2A = 0; // D11 duty
+  OCR2B = 0; // D3  duty
 }
 
 // =========================================================
 // BTS7960-STYLE ACTUATOR CONTROL (2 PWM + 2 EN)
+// speed in [-255..255]
 // =========================================================
-//
-// Convention:
-//   speed in [-255..255]
-//   speed > 0: RPWM active, LPWM=0
-//   speed < 0: LPWM active, RPWM=0
-//   speed = 0: both PWM=0
-//
-// EN pins must be HIGH for motion.
 
 static inline void actuator1_init(void) {
   // EN pins outputs
@@ -137,8 +142,7 @@ static inline void actuator2_init(void) {
   ACT2_REN_PORT |= BIT(ACT2_REN_PIN);
   ACT2_LEN_PORT |= BIT(ACT2_LEN_PIN);
 
-  pwm_timer1_init_for_oc1b_8bit(); // D10
-  pwm_timer2_init_for_oc2a();      // D11
+  pwm_timer2_init_dual();
 }
 
 static inline void actuator1_set_speed(int16_t speed) {
@@ -146,8 +150,8 @@ static inline void actuator1_set_speed(int16_t speed) {
   if (speed < -255) speed = -255;
 
   if (speed > 0) {
-    OCR0B = (uint8_t)speed; // D5  = RPWM (OC0B)
-    OCR0A = 0;              // D6  = LPWM (OC0A)
+    OCR0B = (uint8_t)speed; // D5 RPWM (OC0B)
+    OCR0A = 0;              // D6 LPWM (OC0A)
   } else if (speed < 0) {
     OCR0B = 0;
     OCR0A = (uint8_t)(-speed);
@@ -162,13 +166,13 @@ static inline void actuator2_set_speed(int16_t speed) {
   if (speed < -255) speed = -255;
 
   if (speed > 0) {
-    OCR1B = (uint8_t)speed; // D10 = RPWM (OC1B)
-    OCR2A = 0;              // D11 = LPWM (OC2A)
+    OCR2B = (uint8_t)speed; // D3  RPWM (OC2B)
+    OCR2A = 0;              // D11 LPWM (OC2A)
   } else if (speed < 0) {
-    OCR1B = 0;
+    OCR2B = 0;
     OCR2A = (uint8_t)(-speed);
   } else {
-    OCR1B = 0;
+    OCR2B = 0;
     OCR2A = 0;
   }
 }
@@ -198,32 +202,27 @@ static inline void actuator2_enable(uint8_t en) {
 // =========================================================
 // I2C (TWI) MASTER (minimal)
 // =========================================================
-//
-// 100kHz @ 16MHz: TWBR=72, prescaler=1
 
 static inline void twi_init_100khz(void) {
-  // Ensure SDA/SCL are inputs (TWI takes over). Optional: disable pull-ups.
-  DDRC &= (uint8_t)~(BIT(I2C_SDA_PIN) | BIT(I2C_SCL_PIN));
-  PORTC &= (uint8_t)~(BIT(I2C_SDA_PIN) | BIT(I2C_SCL_PIN)); // no internal pullups
+  // Let TWI control the pins; disable internal pullups (external pullups expected)
+  DDRC  &= (uint8_t)~(BIT(I2C_SDA_PIN) | BIT(I2C_SCL_PIN));
+  PORTC &= (uint8_t)~(BIT(I2C_SDA_PIN) | BIT(I2C_SCL_PIN));
 
   TWSR = 0x00; // prescaler = 1
-  TWBR = 72;   // ~100kHz
+  TWBR = 72;   // ~100kHz @ 16MHz
   TWCR = BIT(TWEN);
 }
 
 static inline uint8_t twi_start(uint8_t addr7, uint8_t read) {
-  // START
   TWCR = BIT(TWINT) | BIT(TWSTA) | BIT(TWEN);
   while (!(TWCR & BIT(TWINT))) {;}
 
-  // SLA+R/W
   TWDR = (uint8_t)((addr7 << 1) | (read ? 1 : 0));
   TWCR = BIT(TWINT) | BIT(TWEN);
   while (!(TWCR & BIT(TWINT))) {;}
 
   uint8_t status = (uint8_t)(TWSR & 0xF8);
-  // 0x18: SLA+W ACK, 0x40: SLA+R ACK
-  return (status == (read ? 0x40 : 0x18));
+  return (status == (read ? 0x40 : 0x18)); // SLA+R/W ACK
 }
 
 static inline void twi_stop(void) {
@@ -250,7 +249,7 @@ static inline uint8_t twi_read_nack(void) {
 }
 
 // =========================================================
-// BH1750 (two sensors)
+// BH1750 (two sensors, different addresses)
 // =========================================================
 
 #define BH1750_ADDR_LOW   0x23
@@ -282,9 +281,8 @@ static inline uint16_t bh1750_read_raw(uint8_t addr7) {
   return (uint16_t)((hi << 8) | lo);
 }
 
-// Integer lux approximation: lux ≈ raw / 1.2  => (raw*10)/12
 static inline uint16_t bh1750_raw_to_lux_uint(uint16_t raw) {
-  return (uint16_t)(((uint32_t)raw * 10u) / 12u);
+  return (uint16_t)(((uint32_t)raw * 10u) / 12u); // (raw/1.2)
 }
 
 static inline uint16_t bh1750_1_read_lux_uint(void) {
@@ -296,10 +294,64 @@ static inline uint16_t bh1750_2_read_lux_uint(void) {
 }
 
 // =========================================================
-// TOP-LEVEL PROJECT INIT
+// EXACT 1ms SCHEDULER TICK (Timer1 CTC)
+// =========================================================
+//
+// F_CPU=16MHz, prescaler /64 => 250 kHz timer clock
+// Need 1ms => 250 counts. OCR1A = 249 gives 250 counts (0..249).
+//
+// ISR fires every 1ms exactly.
+
+static volatile uint32_t g_ms_ticks = 0;
+
+ISR(TIMER1_COMPA_vect) {
+  g_ms_ticks++;
+}
+
+static inline void sched_init_1ms(void) {
+  uint8_t s = SREG;
+  cli();
+
+  g_ms_ticks = 0;
+
+  // Timer1: CTC mode (WGM12=1), TOP=OCR1A
+  TCCR1A = 0;
+  TCCR1B = 0;
+  TCCR1B |= BIT(WGM12);
+
+  // Compare value for 1ms
+  OCR1A = 249;
+
+  // Enable compare match A interrupt
+  TIMSK1 |= BIT(OCIE1A);
+
+  // Start timer with prescaler /64 (CS11=1, CS10=1)
+  TCCR1B |= BIT(CS11) | BIT(CS10);
+
+  SREG = s;
+  sei();
+}
+
+static inline uint32_t sched_ms(void) {
+  uint32_t t;
+  uint8_t s = SREG;
+  cli();
+  t = g_ms_ticks;
+  SREG = s;
+  return t;
+}
+
+// Cooperative delay (busy-wait). Prefer using sched_ms() checks in a scheduler.
+static inline void sched_delay_ms(uint16_t ms) {
+  uint32_t start = sched_ms();
+  while ((uint32_t)(sched_ms() - start) < ms) {;}
+}
+
+// =========================================================
+// TOP-LEVEL INIT
 // =========================================================
 static inline void nano_init(void) {
-  // Actuators
+  // Actuators (PWM + EN)
   actuator1_init();
   actuator2_init();
 
@@ -307,4 +359,13 @@ static inline void nano_init(void) {
   twi_init_100khz();
   bh1750_init(BH1750_ADDR_LOW);
   bh1750_init(BH1750_ADDR_HIGH);
+
+  // Exact 1ms scheduler tick
+  sched_init_1ms();
 }
+
+
+
+
+
+
