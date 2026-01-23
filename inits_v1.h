@@ -26,6 +26,8 @@
 // - All EN pins are just GPIO outputs (no PWM).
 // - If you need different PWM freq, change prescalers carefully.
 
+
+//This is a test to see how much a single comment line changes the commit chart
 #pragma once
 #include <avr/io.h>
 #include <avr/interrupt.h>
