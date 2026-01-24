@@ -1,19 +1,53 @@
-#include <Arduino.h>
-#include "../lib/inits_v1.h"
 
-// put function declarations here:
-int myFunction(int, int);
 
-void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+#include <avr/io.h>
+#include <util/delay.h>
+#include <stdint.h>
+#include "../lib/inits_v2.h"
+
+#define NANO_HW_IMPLEMENTATION
+
+void actuTest1(){
+  nano_init();
+
+  actuator1_enable(1);
+  actuator2_enable(1);
+
+  while (1) {
+    actuator1_set_speed(120);   // try 120 first for reliable movement
+    sched_delay_ms(2000);
+
+    actuator1_set_speed(0);
+    sched_delay_ms(500);
+
+    actuator1_set_speed(-120);
+    sched_delay_ms(2000);
+
+    actuator1_set_speed(0);
+    sched_delay_ms(1000);
+  }
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
-}
+int main(void) {
+  nano_init();
 
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
+  // Make sure enables are on
+  actuator1_enable(1);
+  actuator2_enable(1);
+
+  while (1) {
+    // State 1: D3 & D5 ON, D6 & D11 OFF
+    OCR0B = 255; // D5
+    OCR2B = 255; // D3
+    OCR0A = 0;   // D6
+    OCR2A = 0;   // D11
+    sched_delay_ms(1000);
+
+    // State 2: D6 & D11 ON, D3 & D5 OFF
+    OCR0B = 0;
+    OCR2B = 0;
+    OCR0A = 255;
+    OCR2A = 255;
+    sched_delay_ms(1000);
+  }
 }
