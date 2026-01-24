@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "../lib/inits_v1.h"
+#include "../include/inits_v1.h"
 
 // put function declarations here:
 int myFunction(int, int);
