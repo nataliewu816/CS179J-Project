@@ -3,9 +3,9 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <stdint.h>
-#include "../lib/inits_v2.h"
 
 // for the reading
+#include "../include/inits_v2.h"
 #include "../include/printer.h"
 #include "../include/driver.h"
 
