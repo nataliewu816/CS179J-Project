@@ -5,7 +5,12 @@
 #include <stdint.h>
 #include "../lib/inits_v2.h"
 
+// for the reading
+#include "../include/printer.h"
+#include "../include/driver.h"
+
 #define NANO_HW_IMPLEMENTATION
+
 
 void actuTest1(){
   nano_init();
@@ -31,11 +36,22 @@ void actuTest1(){
 int main(void) {
   nano_init();
 
+  serialBegin(); // Printer
+  i2c_init();     // Sensors
+  sensor_state = Start; // State Machine
+
+
   // Make sure enables are on
-  actuator1_enable(1);
-  actuator2_enable(1);
+  // actuator1_enable(1);
+  // actuator2_enable(1);
 
   while (1) {
+
+    Sensor_Tick(); 
+    // need for the reading of it 
+    sched_delay_ms(200);
+
+    /*
     // State 1: D3 & D5 ON, D6 & D11 OFF
     OCR0B = 255; // D5
     OCR2B = 255; // D3
@@ -49,5 +65,6 @@ int main(void) {
     OCR0A = 255;
     OCR2A = 255;
     sched_delay_ms(1000);
+    */
   }
 }
