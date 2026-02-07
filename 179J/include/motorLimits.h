@@ -23,3 +23,27 @@ void homeMotors(){
     actuator1_set_speed(0);
     actuator2_set_speed(0);
 }
+//move actuator 2 up by X mm (max 50)
+void A1UP(int mm){
+    actuator1_set_speed(-120);
+    sched_delay_ms(mm*180);
+    actuator1_set_speed(0);
+}
+//move actuator 2 up by X mm (max 50)
+void A2UP(int mm){
+    actuator2_set_speed(-120);
+    sched_delay_ms(mm*180);
+    actuator2_set_speed(0);
+}
+//move actuator 1 down by X mm (max 50)
+void A1DN(int mm){
+    actuator1_set_speed(120);
+    sched_delay_ms(mm*180);
+    actuator1_set_speed(0);
+}
+//move actuator 2 down by X mm (max 50)
+void A2DN(int mm){
+    actuator2_set_speed(120);
+    sched_delay_ms(mm*180);
+    actuator2_set_speed(0);
+}
