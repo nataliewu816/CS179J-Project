@@ -3,7 +3,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <stdint.h>
-#include "../lib/inits_v2.h"
+#include "../include/inits_v2.h"
 
 #define NANO_HW_IMPLEMENTATION
 

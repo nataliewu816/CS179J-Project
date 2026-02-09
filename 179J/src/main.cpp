@@ -8,6 +8,7 @@
 #include "../include/inits_v2.h"
 #include "../include/printer.h"
 #include "../include/driver.h"
+#include "../include/actuatorControl.h"
 
 #define NANO_HW_IMPLEMENTATION
 
@@ -40,16 +41,30 @@ int main(void) {
   i2c_init();     // Sensors
   sensor_state = Start; // State Machine
 
+  serialPrint("Testing\n");
 
-  // Make sure enables are on
-  // actuator1_enable(1);
-  // actuator2_enable(1);
+  homeMotors();
+  
+  serialPrint("Sensor Tracking Active\n");
 
   while (1) {
 
     Sensor_Tick(); 
+
+
+    if(diff > 50){
+      if(L > R){
+        serialPrint("Left is Brighter Right going up\n");
+        A2Up(5);
+        A1Down(5);
+      } else {
+        serialPrint("Right is Brighter, Left going up\n");
+        A1Up(5);
+        A2Down(5);
+      }
+    }
     // need for the reading of it 
-    sched_delay_ms(200);
+    sched_delay_ms(750);
 
     /*
     // State 1: D3 & D5 ON, D6 & D11 OFF
