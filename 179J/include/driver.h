@@ -85,6 +85,7 @@ static inline void Sensor_Tick() {
 
     // State Actions 
     switch (sensor_state) {
+
         case Analyze_Noise:
             serialPrint("[Noise]  L:"); serialPrintNum(L);
             serialPrint(" R:"); serialPrintNum(R);
