@@ -9,9 +9,14 @@
 
 //50mm total freedom
 
-//10mm is 1800ms at 120 speed
+//10mm is MMDELAY0ms at 120 speed
 //negative speed is UP
-//180ms = 1mm
+//MMDELAYms = 1mm
+//120 for 70
+//60 for 140
+inline constexpr int MMDELAY = 35;
+inline constexpr int ACTSPEED = 61;
+inline constexpr int STEPS = 10;
 inline constexpr int MAXHEIGHT = 50;
 inline constexpr int MINHEIGHT = 0;
 //ActuatorTracker must be declared in main.cpp to use functions - it will track
@@ -26,7 +31,7 @@ int A2POS = -1;
     void homeMotors(){
         actuator1_set_speed(-120);
         actuator2_set_speed(-120);
-        sched_delay_ms(20000);
+        sched_delay_ms(10000);
         actuator1_set_speed(0);
         actuator2_set_speed(0);
         A1POS = 50;
@@ -41,9 +46,11 @@ int A2POS = -1;
         if((A1POS + mm) > MAXHEIGHT){
             mm = MAXHEIGHT - A1POS;
         }
-        actuator1_set_speed(-120);
-        sched_delay_ms(mm*180);
-        actuator1_set_speed(0);
+        for(int i=0;i<STEPS;i++){
+            actuator1_set_speed(-ACTSPEED);
+            sched_delay_ms(mm*MMDELAY);
+            actuator1_set_speed(0);
+        }
         A1POS = A1POS + mm;
     }
     //move actuator 2 up by X mm (max 50)
@@ -54,8 +61,8 @@ int A2POS = -1;
         if((A2POS + mm) > MAXHEIGHT){
             mm = MAXHEIGHT - A2POS;
         }
-        actuator2_set_speed(-120);
-        sched_delay_ms(mm*180);
+        actuator2_set_speed(-ACTSPEED);
+        sched_delay_ms(mm*MMDELAY);
         actuator2_set_speed(0);
         A2POS = A2POS + mm;
     }
@@ -67,9 +74,11 @@ int A2POS = -1;
         if((A1POS - mm) < MINHEIGHT){
             mm = A1POS - MINHEIGHT;
         }
-        actuator1_set_speed(120);
-        sched_delay_ms(mm*180);
-        actuator1_set_speed(0);
+        for(int i=0;i<STEPS;i++){
+            actuator1_set_speed(ACTSPEED);
+            sched_delay_ms(mm*MMDELAY);
+            actuator1_set_speed(0);
+        }
         A1POS = A1POS - mm;
     }
     //move actuator 2 down by X mm (max 50)
@@ -80,8 +89,8 @@ int A2POS = -1;
         if((A2POS - mm) < MINHEIGHT){
             mm = A2POS - MINHEIGHT;
         }
-        actuator2_set_speed(120);
-        sched_delay_ms(mm*180);
+        actuator2_set_speed(ACTSPEED);
+        sched_delay_ms(mm*MMDELAY);
         actuator2_set_speed(0);
         A2POS = A2POS - mm;
     }
