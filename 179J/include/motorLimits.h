@@ -94,4 +94,27 @@ int A2POS = -1;
         actuator2_set_speed(0);
         A2POS = A2POS - mm;
     }
+    //angle function - 0 degrees is flat pointing up, max
+    //angle is 3.3 degrees with 50mm x 34" right triangle
+    void angle(int degrees){
+        //run the A#UP/DN functions here
+        if(degrees == 0){
+            //run both actuators to bottom limit
+            A1DN(MINHEIGHT);
+            A2DN(MINHEIGHT);
+        }
+        else if(degrees > 0){
+            //run actuator X to top and Y to bottom
+            A1UP(MAXHEIGHT);
+            A2DN(MINHEIGHT);
+        }
+        else{
+            //run actuator X to bottom and Y to top
+            A2UP(MAXHEIGHT);
+            A1DN(MINHEIGHT);
+        }
+    }
+
+
+
 };
