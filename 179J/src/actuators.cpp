@@ -11,8 +11,6 @@ int main(void) {
   nano_init();
   actuator1_set_speed(0);
   actuator2_set_speed(0);
-  actuator1_enable(1);
-  actuator2_enable(0);
  
 
   while (1) {
