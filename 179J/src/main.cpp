@@ -9,6 +9,7 @@
 #include "../include/printer.h"
 #include "../include/driver.h"
 #include "../include/actuatorControl.h"
+#include "../include/motorLimits.h"
 
 #define NANO_HW_IMPLEMENTATION
 
@@ -40,18 +41,19 @@ int main(void) {
   serialBegin(); // Printer
   i2c_init();     // Sensors
   sensor_state = Start; // State Machine
-
-  serialPrint("Testing\n");
-
-  homeMotors();
   
-  serialPrint("Sensor Tracking Active\n");
+  ActuatorControls actuator;
+  actuator.homeMotors(); 
+
+  
+  //serialPrint("Testing\n");
+  //serialPrint("Sensor Tracking Active\n");
 
   while (1) {
 
     Sensor_Tick(); 
 
-
+    /*
     if(diff > 50){
       if(L > R){
         serialPrint("Left is Brighter Right going up\n");
@@ -63,6 +65,7 @@ int main(void) {
         A2Down(5);
       }
     }
+      */
     // need for the reading of it 
     sched_delay_ms(750);
 

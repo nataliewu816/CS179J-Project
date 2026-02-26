@@ -36,7 +36,10 @@ int A2POS = -1;
         actuator2_set_speed(0);
         A1POS = 50;
         A2POS = 50;
-        //TODO add code to run actuators back down to the threshhold level
+        
+        // Move back down to safe starting position 
+        A1DN(40);  
+        A2DN(40);  
     }
     //move actuator 2 up by X mm (max 50)
     void A1UP(int mm){
@@ -61,9 +64,11 @@ int A2POS = -1;
         if((A2POS + mm) > MAXHEIGHT){
             mm = MAXHEIGHT - A2POS;
         }
-        actuator2_set_speed(-ACTSPEED);
-        sched_delay_ms(mm*MMDELAY);
-        actuator2_set_speed(0);
+        for(int i=0;i<STEPS;i++){
+            actuator2_set_speed(-ACTSPEED);
+            sched_delay_ms(mm*MMDELAY);
+            actuator2_set_speed(0);
+        }
         A2POS = A2POS + mm;
     }
     //move actuator 1 down by X mm (max 50)
@@ -89,9 +94,11 @@ int A2POS = -1;
         if((A2POS - mm) < MINHEIGHT){
             mm = A2POS - MINHEIGHT;
         }
-        actuator2_set_speed(ACTSPEED);
-        sched_delay_ms(mm*MMDELAY);
-        actuator2_set_speed(0);
+        for(int i=0;i<STEPS;i++){
+            actuator2_set_speed(ACTSPEED);
+            sched_delay_ms(mm*MMDELAY);
+            actuator2_set_speed(0);
+        }
         A2POS = A2POS - mm;
     }
     //angle function - 0 degrees is flat pointing up, max
