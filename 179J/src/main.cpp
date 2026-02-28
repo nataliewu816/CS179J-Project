@@ -53,7 +53,7 @@ int main(void) {
 
     Sensor_Tick(); 
 
-    /*
+    
     if(diff > 50){
       if(L > R){
         serialPrint("Left is Brighter Right going up\n");
@@ -65,7 +65,7 @@ int main(void) {
         A2Down(5);
       }
     }
-      */
+
     // need for the reading of it 
     sched_delay_ms(750);
 
