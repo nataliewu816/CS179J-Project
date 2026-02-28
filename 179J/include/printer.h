@@ -32,6 +32,6 @@ static inline void serialPrint(const char* text) {
 
 static inline void serialPrintNum(uint16_t number) { 
     char buffer[10]; //  hold the text
-    itoa(number, buffer, 10); // Convert Number -> Text
+    utoa(number, buffer, 10); // it need to be utoa not itoa
     serialPrint(buffer); // Print the text
 }

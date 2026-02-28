@@ -2,6 +2,7 @@
 #include <avr/io.h>
 #include <stdint.h>
 #include "printer.h" 
+#include "actuatorControl.h"
 
 
 #define I2C_SDA PC4
@@ -85,23 +86,30 @@ static inline void Sensor_Tick() {
 
     // State Actions 
     switch (sensor_state) {
+
         case Analyze_Noise:
             serialPrint("[Noise]  L:"); serialPrintNum(L);
+            serialPrint("L Pos:"); serialPrintNum(posA1);
             serialPrint(" R:"); serialPrintNum(R);
+            serialPrint("R Pos:"); serialPrintNum(posA2);
             serialPrint(" D:"); serialPrintNum(diff);
             serialPrint("\n");
             break;
 
         case Analyze_Shadow:
             serialPrint("[Shadow] L:"); serialPrintNum(L);
+            serialPrint("L Pos:"); serialPrintNum(posA1);
             serialPrint(" R:"); serialPrintNum(R);
+            serialPrint("R Pos:"); serialPrintNum(posA2);
             serialPrint(" D:"); serialPrintNum(diff);
             serialPrint("\n");
             break;
 
         case Analyze_Direct:
             serialPrint("[DIRECT] L:"); serialPrintNum(L);
+            serialPrint("L Pos:"); serialPrintNum(posA1);
             serialPrint(" R:"); serialPrintNum(R);
+            serialPrint("R Pos:"); serialPrintNum(posA2);
             serialPrint(" D:"); serialPrintNum(diff);
             serialPrint("\n");
             break;
