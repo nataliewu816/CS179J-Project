@@ -37,11 +37,11 @@ void actuTest1(){
 
 int main(void) {
   nano_init();
-
   serialBegin(); // Printer
   i2c_init();     // Sensors
+  actuator1_enable(1);
+  actuator2_enable(1);
   sensor_state = Start; // State Machine
-  
   ActuatorControls actuator;
   actuator.homeMotors(); 
 

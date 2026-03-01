@@ -24,7 +24,7 @@ void homeMotors(){
     // DONT FORGET TO CHANGE IT TO BACK TO 20 SECONDSSSSSSS
     // it is supposed to be 20s for the actual actuatorsbut  
     // its 2 since i am testing it out on termial
-    sched_delay_ms(2000); 
+    sched_delay_ms(20000); 
 
     // When to stop
     // actuator1_set_speed(0);
