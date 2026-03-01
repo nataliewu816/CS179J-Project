@@ -161,11 +161,11 @@ static inline void actuator1_set_speed(int16_t speed) {
   if (speed < -255) speed = -255;
 
   if (speed > 0) {
-    OCR0B = (uint8_t)speed; // D5 RPWM (OC0B)
-    OCR0A = 0;              // D6 LPWM (OC0A)
-  } else if (speed < 0) {
     OCR0B = 0;
-    OCR0A = (uint8_t)(-speed);
+    OCR0A = (uint8_t)speed;
+  } else if (speed < 0) {
+    OCR0B = (uint8_t)(-speed); // D5 RPWM (OC0B)
+    OCR0A = 0;                 // D6 LPWM (OC0A)
   } else {
     OCR0B = 0;
     OCR0A = 0;
