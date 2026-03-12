@@ -1,32 +1,3 @@
-// nano_hw.h  (ATmega328P / Arduino Nano, bare-metal; no Arduino core)
-// Uses only <avr/io.h> and <avr/interrupt.h>.
-//
-// FINAL PIN MAP:
-// Actuator #1 (BTS7960-style):
-//   D4 = R_EN, D7 = L_EN, D5 = RPWM (PWM), D6 = LPWM (PWM)
-//   -> Timer0 provides PWM on D5(OC0B) and D6(OC0A)
-//
-// Actuator #2 (BTS7960-style):
-//   D9  = R_EN (digital only), D12 = L_EN (digital only)
-//   D3  = RPWM (PWM), D11 = LPWM (PWM)
-//   -> Timer2 provides PWM on D3(OC2B) and D11(OC2A)
-//
-// Scheduler:
-//   Exact 1.000 ms tick using Timer1 CTC:
-//     Prescaler /64, OCR1A=249 => 250kHz clock, 250 counts = 1ms
-//
-// Notes:
-// - Timer0 PWM frequency with /64 prescale is ~976 Hz (fast PWM 8-bit).
-// - Timer2 PWM frequency with /64 prescale is ~976 Hz (fast PWM 8-bit).
-// - All EN pins are just GPIO outputs (no PWM).
-//
-// Changes vs your previous header:
-// 1) Timer0 init is "non-clobbering": we clear only the bits we use.
-// 2) Timer1 init clears pending OCF1A flag before enabling interrupt.
-// 3) Timer1 tick counter + ISR moved OUT of the header into a .c file in the
-//    recommended layout below (multi-file safe). For single-file projects,
-//    you can keep the "NANO_HW_IMPLEMENTATION" block below in exactly one TU.
-
 #pragma once
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -171,6 +142,8 @@ static inline void actuator1_set_speed(int16_t speed) {
     OCR0A = 0;
   }
 }
+
+void schde_delay_ms(int x){serialPrint("You didn't say the magic word");}
 
 static inline void actuator2_set_speed(int16_t speed) {
   if (speed > 255) speed = 255;
