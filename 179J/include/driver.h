@@ -2,7 +2,7 @@
 #include <avr/io.h>
 #include <stdint.h>
 #include "printer.h" 
-#include "actuatorControl.h"
+#include "motorlimits.h"
 
 
 #define I2C_SDA PC4
@@ -22,6 +22,7 @@ static inline uint8_t i2c_read(int ack) { TWCR = (1<<TWINT)|(1<<TWEN)|(ack?(1<<T
 
 // Reading part of it and calucated
 static inline uint16_t get_lux_raw(uint8_t addr) {
+    //serialPrint("I went to get a value from a lux at");serialPrintNum(addr);serialPrint("\n");
    i2c_start(); 
     i2c_write(addr << 1); // Write Addr
     i2c_write(0x10);      // CMD_HIGH_RES
@@ -56,15 +57,22 @@ static inline void Sensor_Tick() {
             break;
 
         case ReadValues:
-            L = get_lux_raw(0x23);
-            R = get_lux_raw(0x5C);
-            
+            //Both going to A4 A5, now R A2,A3
+            L = get_lux_raw(0x5C);
+            // serialPrint(" L:"); serialPrintNum(L);
+            // serialPrint("\n");
+            //blue is SDA green is SCL
+            //grey is SDA, purple is SCL
+            //SDA is A4, SCL is A5
+            R = get_lux_raw(0x23);
+            // serialPrint(" R:"); serialPrintNum(R);
+            // serialPrint("\n");
             if (L > R) diff = L - R;
             else diff = R - L;
 
-            if (diff < 25) sensor_state = Analyze_Noise;
-            else if (diff < 75) sensor_state = Analyze_Shadow;
-            else sensor_state = Analyze_Direct;
+            // if (diff < 25) sensor_state = Analyze_Noise;
+            // else if (diff < 75) sensor_state = Analyze_Shadow;
+            // else sensor_state = Analyze_Direct;
             break;
 
         case Analyze_Noise:
@@ -89,27 +97,27 @@ static inline void Sensor_Tick() {
 
         case Analyze_Noise:
             serialPrint("[Noise]  L:"); serialPrintNum(L);
-            serialPrint("L Pos:"); serialPrintNum(posA1);
+            //serialPrint("L Pos:"); serialPrintNum(posA1);
             serialPrint(" R:"); serialPrintNum(R);
-            serialPrint("R Pos:"); serialPrintNum(posA2);
+            //serialPrint("R Pos:"); serialPrintNum(posA2);
             serialPrint(" D:"); serialPrintNum(diff);
             serialPrint("\n");
             break;
 
         case Analyze_Shadow:
             serialPrint("[Shadow] L:"); serialPrintNum(L);
-            serialPrint("L Pos:"); serialPrintNum(posA1);
+            //serialPrint("L Pos:"); serialPrintNum(posA1);
             serialPrint(" R:"); serialPrintNum(R);
-            serialPrint("R Pos:"); serialPrintNum(posA2);
+            //serialPrint("R Pos:"); serialPrintNum(posA2);
             serialPrint(" D:"); serialPrintNum(diff);
             serialPrint("\n");
             break;
 
         case Analyze_Direct:
             serialPrint("[DIRECT] L:"); serialPrintNum(L);
-            serialPrint("L Pos:"); serialPrintNum(posA1);
+            //serialPrint("L Pos:"); serialPrintNum(posA1);
             serialPrint(" R:"); serialPrintNum(R);
-            serialPrint("R Pos:"); serialPrintNum(posA2);
+            //serialPrint("R Pos:"); serialPrintNum(posA2);
             serialPrint(" D:"); serialPrintNum(diff);
             serialPrint("\n");
             break;
