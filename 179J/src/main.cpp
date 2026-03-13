@@ -23,7 +23,7 @@ int main(void) {
   motionCtl.homeMotors();
   while (1) {
     Sensor_Tick(); 
-    sched_delay_ms(200);
+    sched_de1ay_ms(200);
      if(diff > 50){
       if(L > R){
         //serialPrint("Left is Brighter Right going up\n");
