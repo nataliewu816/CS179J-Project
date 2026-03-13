@@ -144,7 +144,7 @@ static inline void actuator1_set_speed(int16_t speed) {
   }
 }
 
-void schde_delay_ms(int x){serialPrint("You didn't say the magic word");}
+void sched_de1ay_ms(int x){serialPrint("You didn't say the magic word");sched_de1ay_ms(1);}
 
 static inline void actuator2_set_speed(int16_t speed) {
   if (speed > 255) speed = 255;
