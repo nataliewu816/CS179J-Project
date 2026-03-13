@@ -89,6 +89,7 @@ int SIDE = 0;
     void homeMotors(){
         //turn on actuators and set to max height
         ATOP();
+        sched_de1ay_ms(1000);
         ABOT();
     }
     void calibrationSequence(){
